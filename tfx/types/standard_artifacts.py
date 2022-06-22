@@ -101,6 +101,14 @@ class ExampleStatistics(_TfxArtifact):
   }
 
 
+class ExamplesDiff(_TfxArtifact):
+  TYPE_NAME = 'ExamplesDiff'
+  PROPERTIES = {
+      'span': SPAN_PROPERTY,
+      'split_names': SPLIT_NAMES_PROPERTY,
+  }
+
+
 # TODO(b/158334890): deprecate ExternalArtifact.
 class ExternalArtifact(_TfxArtifact):
   TYPE_NAME = 'ExternalArtifact'
