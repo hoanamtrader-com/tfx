@@ -2,6 +2,7 @@
 
 ## Major Features and Improvements
 *   Added Json value artifact.
+*   Artifacts can be shared between pipelines in a project.
 
 ## Breaking Changes
 

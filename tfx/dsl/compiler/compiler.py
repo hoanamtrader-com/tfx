@@ -81,7 +81,7 @@ class _CompilerContext:
     for predicate in conditional.get_predicates(here,
                                                 self.dsl_context_registry):
       for chnl in predicate.dependent_channels():
-        if isinstance(chnl, tfx_channel.OutputChannel):
+        if isinstance(chnl, types.OutputChannel):
           self._add_implicit_dependency(chnl.producer_component_id, here.id)
 
   def topologically_sorted(self, tfx_nodes: Iterable[base_node.BaseNode]):
@@ -845,10 +845,27 @@ def _set_node_inputs(node: pipeline_pb2.PipelineNode,
     input_spec = node.inputs.inputs[key]
 
     if isinstance(value, tfx_channel.PipelineInputChannel):
+      value = cast(tfx_channel.PipelineInputChannel, value)
       channel_pb = input_spec.channels.add()
 
       if value in compile_context.channels:
         channel_pb.CopyFrom(compile_context.channels[value])
+      elif isinstance(value.wrapped, tfx_channel.PipelineOutputChannel):
+        # Add pipeline context query
+        context_query = channel_pb.context_queries.add()
+        context_query.type.name = constants.PIPELINE_CONTEXT_TYPE_NAME
+        context_query.name.field_value.string_value = (
+            value.wrapped.pipeline.pipeline_name)
+        # Add node context query
+        node_context_query = channel_pb.context_queries.add()
+        node_context_query.type.name = constants.NODE_CONTEXT_TYPE_NAME
+        node_context_query.name.field_value.string_value = "{}.{}".format(
+            value.wrapped.pipeline.pipeline_name,
+            value.wrapped.wrapped.producer_component_id)
+
+        artifact_type = value.type._get_artifact_type()  # pylint: disable=protected-access
+        channel_pb.artifact_query.type.CopyFrom(artifact_type)
+        channel_pb.artifact_query.type.ClearField("properties")
       else:
         raise ValueError(
             f"Failed to find producer info for the input channel '{key}' "
